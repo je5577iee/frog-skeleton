@@ -38,7 +38,8 @@ button:focus-visible{outline:3px solid var(--sel); outline-offset:2px}
 
 /* ---------- 首頁：像標本標籤卡 ---------- */
 .card{max-width:640px; margin:10px auto 0; background:#fffdf7; border:1.5px solid var(--ink); border-radius:4px; padding:22px 22px 24px; box-shadow:6px 6px 0 rgba(36,49,47,.12)}
-.label-top{display:flex; justify-content:space-between; font-size:12px; letter-spacing:2px; color:var(--soft); border-bottom:1px solid var(--line); padding-bottom:8px}
+.label-top span{white-space:nowrap}
+.label-top{display:flex; flex-wrap:wrap; gap:2px 12px; justify-content:space-between; font-size:12px; letter-spacing:2px; color:var(--soft); border-bottom:1px solid var(--line); padding-bottom:8px}
 .card h1{margin:14px 0 2px; font-size:clamp(34px,9vw,46px); letter-spacing:6px}
 .card .latin{font-style:italic; color:var(--soft); margin:0}
 .hero{display:flex; justify-content:center; margin:8px 0}
@@ -49,7 +50,21 @@ button:focus-visible{outline:3px solid var(--sel); outline-offset:2px}
 .lv .d{font-size:14px; color:var(--soft); display:block; margin-top:2px}
 .lv .n{margin-left:auto; text-align:right; font-weight:800; white-space:nowrap}
 .lv .n small{display:block; color:var(--soft); font-weight:600}
-.lv[aria-pressed="true"]{border-color:var(--ink); box-shadow:inset 4px 0 0 var(--red)}
+.stage-card{flex-wrap:wrap; cursor:default}
+.stage-card .num{width:38px; height:38px; flex:none; border-radius:50%; background:var(--ink); color:#fffdf7; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:900}
+.stage-card > span:nth-child(2){flex:1; min-width:200px}
+.stage-card .best{display:block; margin-top:4px; font-size:13px; font-weight:800; color:var(--red)}
+.go-btns{display:flex; gap:8px; margin-left:auto}
+.go-btns .btn{font-size:16px}
+.typebox{display:grid; gap:8px; background:#fffdf7; border:1.5px solid var(--line); border-radius:6px; padding:10px}
+.typebox .tgt{font-weight:800; color:var(--soft)}
+.typebox .tgt b{color:var(--ink)}
+.typebox .row{display:flex; gap:8px}
+.typebox input{flex:1; min-width:0; font:inherit; font-size:18px; padding:8px 10px; border:1.5px solid var(--ink); border-radius:6px; background:#fff; color:var(--ink)}
+.typebox input:disabled{background:#f1ede4}
+.typebox .btn:disabled{opacity:.4}
+.bone.picked .o *{stroke:var(--sel); stroke-width:4.5}
+.bone.picked .f *{fill:#dbe8f7}
 .how{font-size:14px; color:var(--soft); line-height:1.8; margin:14px 0 0; padding-left:18px}
 .home-btns{display:flex; gap:10px; margin-top:16px}
 .home-btns .primary{flex:1; font-size:20px; padding:12px}
@@ -137,14 +152,25 @@ button:focus-visible{outline:3px solid var(--sel); outline-offset:2px}
       <h1 class="serif">蛙骨拼圖</h1>
       <p class="latin">Frog skeleton puzzle · <i>Rana</i> sp.</p>
       <div class="hero" id="hero"></div>
-      <div class="levels" id="levels"></div>
+      <div class="levels">
+        <div class="lv stage-card">
+          <span class="num serif">1</span>
+          <span><span class="t serif">第一關：拼骨架</span><span class="d">56 塊骨頭，頭骨也拆開。把骨頭拖回正確的位置。</span><span class="best" id="bestBuild"></span></span>
+          <div class="go-btns"><button class="btn primary" id="goBuild">開始拼</button></div>
+        </div>
+        <div class="lv stage-card">
+          <span class="num serif">2</span>
+          <span><span class="t serif">第二關：標名稱</span><span class="d">骨架已經拼好，標出 28 種骨頭的名稱。</span><span class="best" id="bestLabel"></span></span>
+          <div class="go-btns"><button class="btn primary" id="goDrag">拖曳標籤</button><button class="btn primary" id="goType">自己打字</button></div>
+        </div>
+      </div>
       <ol class="how">
-        <li>把右邊（手機在下方）的骨頭拖到正確位置；也可以先點骨頭，再點骨架上的位置。</li>
-        <li>左右成對的骨頭可以放在任一邊；第 2～8 節軀幹椎也可以互換。</li>
-        <li>拼完後進入第二階段：把名稱標籤放到對應的骨頭上。</li>
+        <li><b>拼骨架</b>：把右邊（手機在下方）的骨頭拖到正確位置；也可以先點骨頭，再點骨架上的位置。左右成對的骨頭可以放在任一邊；第 2～8 節軀幹椎也可以互換。</li>
+        <li><b>標名稱・拖曳標籤</b>：把現成的名稱標籤拖到對應的骨頭上。</li>
+        <li><b>標名稱・自己打字</b>：點一塊骨頭，打出它的名稱，中文或英文都可以；打錯兩次可以看答案。</li>
+        <li>成對的骨頭只要標一邊。</li>
       </ol>
       <div class="home-btns">
-        <button class="btn primary" id="startBtn">開始拼</button>
         <button class="btn" id="soundBtn"></button>
       </div>
     </div>
@@ -180,6 +206,15 @@ button:focus-visible{outline:3px solid var(--sel); outline-offset:2px}
           <h3>點一個名稱，再點骨架上對應的骨頭（也可以直接拖過去）</h3>
           <div class="chips" id="chips"></div>
           <div class="done-list" id="doneList"></div>
+        </div>
+        <div id="p3" hidden>
+          <h3>點骨架上的一塊骨頭，打出它的名稱（中文或英文都可以）</h3>
+          <div class="typebox">
+            <div class="tgt" id="typeTgt">還沒選骨頭</div>
+            <div class="row"><input id="typeIn" type="text" autocomplete="off" placeholder="例如：股骨 或 femur" disabled><button class="btn primary" id="typeOk" disabled>確定</button></div>
+            <div class="row"><button class="btn small" id="typeGive" disabled>看答案</button><button class="btn small" id="typeSkip" disabled>換一塊</button></div>
+          </div>
+          <div class="done-list" id="doneList2"></div>
         </div>
       </div>
     </div>
@@ -364,6 +399,7 @@ function pieceSVG(p){ return p.fine.map(fineSVG).join(''); }
 const $ = function(id){ return document.getElementById(id); };
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
 function show(id){ document.querySelectorAll('.screen').forEach(function(s){ s.classList.toggle('active', s.id===id); }); window.scrollTo(0,0); }
+function esc(t){ return String(t).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
 function mmss(ms){ const s=Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
 const store = (function(){
   try{ const s = JSON.parse(localStorage.getItem('frog-bones')); if(s) return s; }catch(e){}
@@ -397,12 +433,12 @@ function skeletonSVG(extraClass){
 }
 $('hero').innerHTML = skeletonSVG();
 function renderHome(){
-  $('levels').innerHTML = Object.keys(LEVELS).map(function(k){
-    const L = LEVELS[k], n = buildPieces(k).length, b = store.best[k];
-    return '<button class="lv" data-level="'+k+'" aria-pressed="'+(store.level===k)+'"><span><span class="t serif">'+L.name+'</span><span class="d">'+L.desc+'</span></span>'
-      + '<span class="n">'+n+' 塊<small>'+(b ? '最佳 '+mmss(b) : '　')+'</small></span></button>';
-  }).join('');
-  document.querySelectorAll('[data-level]').forEach(function(b){ b.onclick = function(){ store.level = b.dataset.level; save(); renderHome(); }; });
+  const b = store.best || {};
+  $('bestBuild').textContent = b.build ? '最佳紀錄 '+mmss(b.build) : '';
+  const l = [];
+  if(b.label_drag) l.push('拖曳 '+mmss(b.label_drag));
+  if(b.label_type) l.push('打字 '+mmss(b.label_type));
+  $('bestLabel').textContent = l.length ? '最佳紀錄：'+l.join('、') : '';
   $('soundBtn').textContent = '音效：' + (soundOn ? '開' : '關');
 }
 $('soundBtn').onclick = function(){ soundOn = !soundOn; renderHome(); };
@@ -417,25 +453,32 @@ const SILH = (function(){
   const L = st(['186 292','132 340','104 262','98 205']) + st(['286 656','178 724','124 860','106 950','100 1000']);
   return body + L + '<g transform="matrix(-1 0 0 1 600 0)">'+L+'</g>';
 })();
-function startGame(){
-  level = store.level; pieces = buildPieces(level); byId = {}; pieces.forEach(function(p){ byId[p.id] = p; });
-  filled = {}; errors = 0; labelErrors = 0; hints = 0; t0 = 0; selected = null; attempts = {}; selChip = null; phase = 1;
+/* 兩關都用最細的版本（56 塊） */
+let mode = 'build', labelHow = 'drag', typeSel = null, typeTries = 0, revealed = 0;
+function prepBoard(){
+  level = 'hard'; pieces = buildPieces(level); byId = {}; pieces.forEach(function(p){ byId[p.id] = p; });
+  filled = {}; errors = 0; labelErrors = 0; hints = 0; revealed = 0; t0 = 0; selected = null; attempts = {}; selChip = null; typeSel = null;
   clearInterval(timer); $('tTime').textContent = '00:00';
   $('silh').innerHTML = '<g class="silh">'+SILH+'</g>';
   /* 量出每塊在骨架上的範圍 */
   $('measure').innerHTML = pieces.map(function(p){ return '<g data-id="'+p.id+'">'+pieceSVG(p)+'</g>'; }).join('');
   document.querySelectorAll('#measure > g').forEach(function(g){ const b = g.getBBox(); const p = byId[g.dataset.id]; p.box = { x:b.x, y:b.y, w:b.width, h:b.height, cx:b.x+b.width/2, cy:b.y+b.height/2 }; });
   $('measure').innerHTML = '';
+  $('placed').innerHTML = ''; $('flash').innerHTML = ''; $('ghosts').innerHTML = '';
+  $('modal').hidden = true; $('p1').hidden = true; $('p2').hidden = true; $('p3').hidden = true;
+}
+function placedHTML(p){ return '<g class="bone" data-id="'+p.id+'" data-n="'+p.n+'" style="--rc:'+REGION[p.n]+'">'+pieceSVG(p)+'</g>'; }
+function startGame(){
+  mode = 'build'; prepBoard(); phase = 1;
   $('ghosts').innerHTML = pieces.map(function(p){ return '<g class="ghost" data-id="'+p.id+'">'+pieceSVG(p)+'</g>'; }).join('');
-  $('ghosts').classList.toggle('off', !LEVELS[level].ghost);
-  $('placed').innerHTML = ''; $('flash').innerHTML = '';
+  $('ghosts').classList.add('off');
   $('tray').innerHTML = shuffle(pieces.slice()).map(function(p){
     const b = p.box, pad = 6;
     return '<button class="piece" data-id="'+p.id+'" aria-label="骨頭"><svg viewBox="'+f(b.x-pad)+' '+f(b.y-pad)+' '+f(b.w+pad*2)+' '+f(b.h+pad*2)+'">'+pieceSVG(p)+'</svg></button>';
   }).join('');
   document.querySelectorAll('.piece').forEach(function(el){ el.addEventListener('pointerdown', function(e){ startDrag(e, el, 'piece'); }); });
-  $('p1').hidden = false; $('p2').hidden = true; $('modal').hidden = true;
-  $('phaseTitle').textContent = '第一階段：拼骨架（'+LEVELS[level].name+'）';
+  $('p1').hidden = false;
+  $('phaseTitle').textContent = '第一關：拼骨架';
   $('trayTitle').textContent = '骨頭零件';
   setMsg('', '把骨頭拖到骨架上正確的位置。左右成對的骨頭放哪一邊都可以。');
   updateGhostBtn(); updateInfo();
@@ -444,7 +487,7 @@ function startGame(){
 function startClock(){ if(!t0){ t0 = Date.now(); timer = setInterval(function(){ $('tTime').textContent = mmss(Date.now()-t0); }, 500); } }
 function updateInfo(){
   if(phase===1){ $('tProg').textContent = '已放 '+Object.keys(filled).length+' / '+pieces.length; $('tErr').textContent = '放錯 '+errors; }
-  else { const total = uniqueNames().length; $('tProg').textContent = '已標 '+(total-labelsLeft.length)+' / '+total; $('tErr').textContent = '標錯 '+labelErrors; }
+  else if(labelsLeft){ const total = uniqueNames().length; $('tProg').textContent = '已標 '+(total-labelsLeft.length)+' / '+total; $('tErr').textContent = (labelHow==='type' ? '打錯 ' : '標錯 ')+labelErrors; }
 }
 function setMsg(cls, html){ $('msg').className = 'msg '+cls; $('msg').innerHTML = html; }
 function nameHTML(n, withFact){ const N = NAMES[n]; return '<b>'+N[0]+'</b> <i>'+N[1]+'</i>'+(withFact ? '<br>'+N[2] : ''); }
@@ -492,7 +535,7 @@ function tryPlace(id, pt){
     if(selected===id) selected = null;
     setMsg('good', '✓ '+nameHTML(s.n, true));
     updateInfo();
-    if(Object.keys(filled).length === pieces.length) setTimeout(startPhase2, 700);
+    if(Object.keys(filled).length === pieces.length) setTimeout(finishBuild, 700);
     return true;
   }
   errors++; sNo(); attempts[id] = (attempts[id]||0) + 1;
@@ -563,7 +606,8 @@ $('board').addEventListener('click', function(e){
   }else{
     const b = e.target.closest ? e.target.closest('#placed .bone') : null;
     if(!b) return;
-    if(phase===2 && selChip) tryLabel(selChip, b);
+    if(phase===2 && labelHow==='type') pickBone(b);
+    else if(phase===2 && selChip) tryLabel(selChip, b);
     else if(phase===3 || b.classList.contains('named')) setMsg('', nameHTML(b.dataset.n, true));
   }
 });
@@ -572,14 +616,83 @@ $('board').addEventListener('click', function(e){
    第二階段：標名稱
    ===================================================================== */
 function uniqueNames(){ const s = []; pieces.forEach(function(p){ if(s.indexOf(p.n) < 0) s.push(p.n); }); return s; }
-function startPhase2(){
+/* how：'drag' 拖曳標籤、'type' 自己打字；keep：拼完骨架直接接著標，骨架不重畫 */
+function startLabel(how, keep){
+  mode = 'label'; labelHow = how;
+  if(!keep){ prepBoard(); $('placed').innerHTML = pieces.map(placedHTML).join(''); }
+  else{
+    clearInterval(timer); t0 = 0; $('tTime').textContent = '00:00'; labelErrors = 0; revealed = 0; hints = 0; typeSel = null; selChip = null;
+    $('modal').hidden = true; $('ghosts').innerHTML = ''; $('p1').hidden = true;
+    document.querySelectorAll('#placed .bone').forEach(function(b){ b.classList.remove('named','picked','placed'); });
+  }
   phase = 2; labelsLeft = shuffle(uniqueNames());
-  $('ghosts').innerHTML = '';
-  $('p1').hidden = true; $('p2').hidden = false;
-  $('phaseTitle').textContent = '第二階段：標名稱（'+LEVELS[level].name+'）';
-  setMsg('good', '骨架拼好了！接著把每個名稱放到對應的骨頭上。成對的骨頭標一邊就好。');
-  renderChips(); updateInfo();
+  $('p2').hidden = how !== 'drag'; $('p3').hidden = how !== 'type';
+  $('phaseTitle').textContent = '第二關：標名稱（'+(how==='drag' ? '拖曳標籤' : '自己打字')+'）';
+  if(how==='drag'){ setMsg('', '把每個名稱放到對應的骨頭上。成對的骨頭標一邊就好。'); renderChips(); }
+  else{ setMsg('', '點一塊骨頭，打出它的名稱。中文、英文都可以；成對的骨頭標一邊就好。'); renderTypeBox(); }
+  updateInfo(); show('game'); window.scrollTo(0,0);
 }
+
+/* ===== 自己打字 ===== */
+/* 可以接受的寫法：中文（含常見別名、簡體字）和英文 */
+const ALIAS = {
+  pmx:['前頜骨','前上頜骨','前颌骨','premaxilla','premaxillary'], max:['上頜骨','上颌骨','maxilla','maxillary'],
+  qj:['方軛骨','方轭骨','quadratojugal'], nas:['鼻骨','nasal','nasalbone'], sph:['蝶篩骨','蝶筛骨','sphenethmoid'],
+  fp:['額頂骨','额顶骨','frontoparietal'], pro:['前耳骨','prootic'], exo:['外枕骨','exoccipital'], sq:['鱗骨','鳞骨','squamosal'],
+  atlas:['寰椎','環椎','atlas'], pre:['軀幹椎','躯干椎','椎骨','脊椎','脊椎骨','presacral','presacralvertebra','presacralvertebrae','vertebra','vertebrae'],
+  sac:['薦椎','荐椎','骶椎','sacral','sacralvertebra','sacrum'], uro:['尾桿骨','尾杆骨','urostyle'],
+  ssc:['上肩胛骨','suprascapula'], sca:['肩胛骨','scapula'], hum:['肱骨','humerus'],
+  ru:['橈尺骨','桡尺骨','radioulna','radiusulna'], car:['腕骨','carpal','carpals'], mc:['掌骨','metacarpal','metacarpals'],
+  ph:['指骨','指節骨','phalanges','phalanx'], il:['腸骨','肠骨','髂骨','ilium'], isc:['坐骨','ischium'],
+  fem:['股骨','femur'], tf:['脛腓骨','胫腓骨','tibiofibula'], ast:['距骨','astragalus','tibiale'],
+  cal:['跟骨','calcaneum','calcaneus','fibulare'], mt:['蹠骨','跖骨','metatarsal','metatarsals'], toe:['趾骨','趾節骨','phalanges','phalanx']
+};
+function norm(t){ return String(t).toLowerCase().replace(/[\s\-_.,，。、·'’()（）]/g, ''); }
+function accepts(n, text){ const t = norm(text); return !!t && (ALIAS[n] || [NAMES[n][0]]).some(function(a){ return norm(a) === t; }); }
+function renderTypeBox(){
+  const on = !!typeSel;
+  $('typeIn').disabled = !on; $('typeOk').disabled = !on; $('typeSkip').disabled = !on;
+  $('typeGive').disabled = !on || typeTries < 2;
+  $('typeTgt').innerHTML = on ? '這塊藍色的骨頭叫什麼？'+(typeTries ? '（打錯 '+typeTries+' 次'+(typeTries >= 2 ? '，可以看答案' : '')+'）' : '') : '還沒選骨頭：點骨架上一塊還沒標名稱的骨頭';
+  const done = uniqueNames().filter(function(n){ return labelsLeft.indexOf(n) < 0; });
+  $('doneList2').innerHTML = done.length ? '已完成：'+done.map(function(n){ return NAMES[n][0]; }).join('、') : '';
+}
+function pickBone(boneEl){
+  if(boneEl.classList.contains('named')){ setMsg('', '這塊已經標好了：'+nameHTML(boneEl.dataset.n, true)); return; }
+  document.querySelectorAll('#placed .bone.picked').forEach(function(b){ b.classList.remove('picked'); });
+  typeSel = boneEl.dataset.n; typeTries = 0;
+  document.querySelectorAll('#placed .bone[data-n="'+typeSel+'"]').forEach(function(b){ b.classList.add('picked'); });
+  $('typeIn').value = ''; renderTypeBox(); $('typeIn').focus({ preventScroll:true });
+  setMsg('', '已選一塊骨頭（藍色），打出它的名稱後按「確定」或 Enter。');
+}
+function markNamed(n){
+  document.querySelectorAll('#placed .bone[data-n="'+n+'"]').forEach(function(b){ b.classList.remove('picked'); b.classList.add('named'); });
+  labelsLeft = labelsLeft.filter(function(x){ return x !== n; }); typeSel = null; typeTries = 0;
+  $('typeIn').value = ''; renderTypeBox(); updateInfo();
+  if(!labelsLeft.length) setTimeout(finish, 600);
+}
+function typeCheck(){
+  if(!typeSel) return;
+  startClock();
+  const n = typeSel;
+  if(accepts(n, $('typeIn').value)){ sSnap(); setMsg('good', '✓ '+nameHTML(n, true)); markNamed(n); return; }
+  if(!norm($('typeIn').value)) return;
+  labelErrors++; typeTries++; sNo();
+  setMsg('warm', '不是「'+esc($('typeIn').value.trim())+'」喔，再想想看。'+(typeTries >= 2 ? '想不起來可以按「看答案」。' : ''));
+  $('typeIn').select(); renderTypeBox(); updateInfo();
+}
+$('typeOk').onclick = typeCheck;
+$('typeIn').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); typeCheck(); } });
+$('typeGive').onclick = function(){
+  if(!typeSel || typeTries < 2) return;
+  const n = typeSel; revealed++;
+  setMsg('warm', '答案是：'+nameHTML(n, true));
+  markNamed(n);
+};
+$('typeSkip').onclick = function(){
+  document.querySelectorAll('#placed .bone.picked').forEach(function(b){ b.classList.remove('picked'); });
+  typeSel = null; typeTries = 0; renderTypeBox(); setMsg('', '點另一塊骨頭試試看。');
+};
 function renderChips(){
   $('chips').innerHTML = labelsLeft.map(function(n){ return '<button class="chip'+(selChip===n?' sel':'')+'" data-n="'+n+'">'+NAMES[n][0]+'<small>'+NAMES[n][1]+'</small></button>'; }).join('');
   document.querySelectorAll('.chip').forEach(function(el){ el.addEventListener('pointerdown', function(e){ startDrag(e, el, 'chip'); }); });
@@ -613,24 +726,51 @@ function tryLabel(n, boneEl){
 }
 
 /* ===== 完成 ===== */
-function finish(){
+function bestOf(key, ms){
+  store.best = store.best || {};
+  const isBest = t0 && (!store.best[key] || ms < store.best[key]);
+  if(isBest){ store.best[key] = ms; save(); }
+  return isBest;
+}
+/* 第一關完成 */
+function finishBuild(){
   phase = 3; clearInterval(timer); sDone();
-  const ms = Date.now() - t0, isBest = !store.best[level] || ms < store.best[level];
-  if(isBest){ store.best[level] = ms; save(); }
-  $('phaseTitle').textContent = '完成！點任何一塊骨頭可以查看名稱';
-  $('modalBox').innerHTML = '<div class="label-top"><span>SPECIMEN COMPLETE</span><span>'+LEVELS[level].name+'</span></div>'
-    + '<h2 class="serif">骨架完成！</h2>'
+  const ms = t0 ? Date.now() - t0 : 0, isBest = bestOf('build', ms);
+  $('phaseTitle').textContent = '第一關完成！點任何一塊骨頭可以查看名稱';
+  document.querySelectorAll('#placed .bone').forEach(function(b){ b.classList.add('named'); });
+  $('modalBox').innerHTML = '<div class="label-top"><span>STAGE 1 COMPLETE</span><span>拼骨架</span></div>'
+    + '<h2 class="serif">骨架拼好了！</h2>'
     + '<div class="stats"><div><small>用時</small><b>'+mmss(ms)+'</b>'+(isBest?' <small>新紀錄！</small>':'')+'</div><div><small>骨頭塊數</small><b>'+pieces.length+'</b></div>'
-    + '<div><small>放錯位置</small><b>'+errors+'</b></div><div><small>標錯名稱</small><b>'+labelErrors+'</b></div></div>'
-    + (hints ? '<p style="margin:0; color:var(--soft)">用了 '+hints+' 次提示</p>' : '')
-    + '<div class="home-btns"><button class="btn" id="viewBtn">查看骨架</button><button class="btn primary" id="againBtn">再拼一次</button><button class="btn" id="homeBtn">回首頁</button></div>';
+    + '<div><small>放錯位置</small><b>'+errors+'</b></div><div><small>用了提示</small><b>'+hints+'</b></div></div>'
+    + '<p style="margin:4px 0 0; font-weight:800">接著挑戰第二關：標名稱</p>'
+    + '<div class="home-btns"><button class="btn primary" id="nDrag">拖曳標籤</button><button class="btn primary" id="nType">自己打字</button></div>'
+    + '<div class="home-btns" style="margin-top:8px"><button class="btn" id="viewBtn">查看骨架</button><button class="btn" id="againBtn">再拼一次</button><button class="btn" id="homeBtn">回首頁</button></div>';
   $('modal').hidden = false;
+  $('nDrag').onclick = function(){ startLabel('drag', true); };
+  $('nType').onclick = function(){ startLabel('type', true); };
   $('viewBtn').onclick = function(){ $('modal').hidden = true; setMsg('', '點任何一塊骨頭可以查看名稱和說明。'); };
   $('againBtn').onclick = startGame;
   $('homeBtn').onclick = function(){ $('modal').hidden = true; renderHome(); show('home'); };
 }
+/* 第二關完成 */
+function finish(){
+  phase = 3; clearInterval(timer); sDone();
+  const ms = t0 ? Date.now() - t0 : 0, isBest = bestOf('label_'+labelHow, ms);
+  $('phaseTitle').textContent = '第二關完成！點任何一塊骨頭可以查看名稱';
+  $('modalBox').innerHTML = '<div class="label-top"><span>STAGE 2 COMPLETE</span><span>'+(labelHow==='drag' ? '拖曳標籤' : '自己打字')+'</span></div>'
+    + '<h2 class="serif">名稱全部標好了！</h2>'
+    + '<div class="stats"><div><small>用時</small><b>'+mmss(ms)+'</b>'+(isBest?' <small>新紀錄！</small>':'')+'</div><div><small>骨頭名稱</small><b>'+uniqueNames().length+'</b></div>'
+    + '<div><small>'+(labelHow==='type' ? '打錯次數' : '標錯次數')+'</small><b>'+labelErrors+'</b></div><div><small>看了答案</small><b>'+revealed+'</b></div></div>'
+    + '<div class="home-btns"><button class="btn" id="viewBtn">查看骨架</button><button class="btn primary" id="againBtn">再標一次</button><button class="btn" id="homeBtn">回首頁</button></div>';
+  $('modal').hidden = false;
+  $('viewBtn').onclick = function(){ $('modal').hidden = true; setMsg('', '點任何一塊骨頭可以查看名稱和說明。'); };
+  $('againBtn').onclick = function(){ startLabel(labelHow, false); };
+  $('homeBtn').onclick = function(){ $('modal').hidden = true; renderHome(); show('home'); };
+}
 $('backBtn').onclick = function(){ clearInterval(timer); renderHome(); show('home'); };
-$('startBtn').onclick = startGame;
+$('goBuild').onclick = startGame;
+$('goDrag').onclick = function(){ startLabel('drag', false); };
+$('goType').onclick = function(){ startLabel('type', false); };
 renderHome();
 </script>
 </body>
