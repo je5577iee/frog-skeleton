@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>蛙骨拼圖</title>
+<!--
+  蛙骨拼圖：青蛙骨骼（背面觀）拼圖與名稱練習
+  - 單一 HTML 檔，完全離線可用，不引用任何外部資源
+  - 骨架為原創示意圖，以赤蛙屬（Rana）背面觀為範本，比例經過簡化
+  - 最佳紀錄只存在本機瀏覽器，不蒐集任何個人資料
+-->
+<style>
+:root{
+  --paper:#f7f4ec; --grid:rgba(70,110,140,.10); --ink:#24312f; --soft:#66736f; --red:#b5482f; --line:#d9d2c3;
+  --bone:#f3ead6; --bone-o:#5d4c38; --good:#2f8a57; --sel:#2f6fb5;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0; min-height:100%}
+body{
+  color:var(--ink); font-family:system-ui,-apple-system,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:24px 24px;
+  user-select:none; -webkit-user-select:none;
+}
+.serif{font-family:"Songti TC","Noto Serif TC","PMingLiU","MingLiU",serif}
+button{font:inherit; color:inherit; cursor:pointer; touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--sel); outline-offset:2px}
+[hidden]{display:none !important}
+#app{max-width:1200px; margin:0 auto; padding:14px 16px 24px}
+.screen{display:none} .screen.active{display:block}
+.btn{border:1.5px solid var(--ink); background:#fffdf7; border-radius:6px; padding:8px 14px; font-weight:700}
+.btn:hover{background:#fff}
+.btn.primary{background:var(--ink); color:#fffdf7}
+.btn.small{font-size:14px; padding:5px 10px}
+.btn.on{background:#e7eef6; border-color:var(--sel); color:var(--sel)}
+
+/* ---------- 首頁：像標本標籤卡 ---------- */
+.card{max-width:640px; margin:10px auto 0; background:#fffdf7; border:1.5px solid var(--ink); border-radius:4px; padding:22px 22px 24px; box-shadow:6px 6px 0 rgba(36,49,47,.12)}
+.label-top{display:flex; justify-content:space-between; font-size:12px; letter-spacing:2px; color:var(--soft); border-bottom:1px solid var(--line); padding-bottom:8px}
+.card h1{margin:14px 0 2px; font-size:clamp(34px,9vw,46px); letter-spacing:6px}
+.card .latin{font-style:italic; color:var(--soft); margin:0}
+.hero{display:flex; justify-content:center; margin:8px 0}
+.hero svg{width:min(200px,50vw); height:auto}
+.levels{display:grid; gap:10px; margin-top:8px}
+.lv{display:flex; align-items:center; gap:12px; text-align:left; border:1.5px solid var(--line); background:#fff; border-radius:6px; padding:12px 14px}
+.lv .t{font-size:20px; font-weight:900; display:block}
+.lv .d{font-size:14px; color:var(--soft); display:block; margin-top:2px}
+.lv .n{margin-left:auto; text-align:right; font-weight:800; white-space:nowrap}
+.lv .n small{display:block; color:var(--soft); font-weight:600}
+.lv[aria-pressed="true"]{border-color:var(--ink); box-shadow:inset 4px 0 0 var(--red)}
+.how{font-size:14px; color:var(--soft); line-height:1.8; margin:14px 0 0; padding-left:18px}
+.home-btns{display:flex; gap:10px; margin-top:16px}
+.home-btns .primary{flex:1; font-size:20px; padding:12px}
+
+/* ---------- 拼圖 ---------- */
+.top{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+.top .info{margin-left:auto; display:flex; gap:12px; font-weight:800; font-variant-numeric:tabular-nums; flex-wrap:wrap}
+.top .info span{background:#fffdf7; border:1px solid var(--line); border-radius:4px; padding:4px 8px}
+.stage{display:grid; grid-template-columns:minmax(0,1fr); gap:12px}
+.boardwrap{background:#fffdf7; border:1.5px solid var(--ink); border-radius:4px; padding:8px; position:relative}
+.boardwrap .tag{position:absolute; left:10px; top:8px; font-size:12px; color:var(--soft); letter-spacing:1px}
+#board{display:block; width:100%; height:auto; margin:0 auto; touch-action:none}
+.msg{min-height:48px; background:#fffdf7; border:1px solid var(--line); border-left:4px solid var(--soft); border-radius:4px; padding:8px 12px; font-size:15px; line-height:1.6}
+.msg.good{border-left-color:var(--good)} .msg.warm{border-left-color:var(--red)}
+.msg b{font-size:17px}
+.msg i{color:var(--soft)}
+.panel{display:grid; grid-template-columns:minmax(0,1fr); gap:10px; align-content:start; min-width:0}
+#p1, #p2{min-width:0}
+.panel h3{margin:0; font-size:15px; letter-spacing:1px; color:var(--soft)}
+.tray{display:flex; flex-wrap:wrap; gap:8px; max-height:52vh; overflow:auto; padding:2px}
+.piece{width:76px; height:76px; border:1.5px solid var(--line); background:#fff; border-radius:6px; padding:5px; touch-action:none; display:flex; align-items:center; justify-content:center}
+.piece svg{max-width:100%; max-height:100%; pointer-events:none}
+.piece.sel{border-color:var(--sel); box-shadow:0 0 0 3px rgba(47,111,181,.25)}
+.piece.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-5px)} 75%{transform:translateX(5px)}}
+.tools{display:flex; gap:8px; flex-wrap:wrap}
+.chips{display:flex; flex-wrap:wrap; gap:8px; max-height:52vh; overflow:auto}
+.chip{border:1.5px solid var(--ink); background:#fff; border-radius:999px; padding:6px 12px; font-weight:800; touch-action:none; text-align:left; line-height:1.25}
+.chip small{display:block; font-weight:600; color:var(--soft); font-style:italic; font-size:12px}
+.chip.sel{background:var(--sel); color:#fff; border-color:var(--sel)} .chip.sel small{color:#dfe8f5}
+.chip.shake{animation:shake .35s}
+.done-list{font-size:13px; color:var(--soft); line-height:1.7}
+
+/* SVG 骨頭 */
+.o *{fill:var(--bone-o); stroke:var(--bone-o); stroke-width:3.2; stroke-linejoin:round}
+.f *{fill:var(--bone); stroke:none}
+.d *{fill:none; stroke:var(--bone-o); stroke-width:1.1; opacity:.65; stroke-linecap:round}
+.ghost .o *{fill:none; stroke:#9aa6a3; stroke-width:1.4; stroke-dasharray:4 3}
+.ghost .f, .ghost .d{display:none}
+#ghosts.off{display:none}
+.slot-flash .o *{stroke:var(--red); stroke-width:3; stroke-dasharray:none; fill:rgba(181,72,47,.12)}
+.slot-flash{animation:blink .5s 4}
+@keyframes blink{50%{opacity:.2}}
+.placed{animation:snap .3s}
+@keyframes snap{0%{opacity:.4} 100%{opacity:1}}
+#placed .bone{cursor:pointer}
+.bone.named .f *{fill:var(--rc)}
+.bone.hover .o *{stroke:var(--sel)}
+.bone.wrongpick .o *{stroke:var(--red)}
+.silh{fill:none; stroke:#8fb59a; stroke-linecap:round; stroke-linejoin:round; opacity:.18}
+.float{position:fixed; z-index:50; pointer-events:none; filter:drop-shadow(0 4px 6px rgba(0,0,0,.25))}
+.float.chipf{background:var(--sel); color:#fff; border-radius:999px; padding:6px 12px; font-weight:800}
+
+/* ---------- 結果 ---------- */
+.modal{position:fixed; inset:0; background:rgba(36,49,47,.45); display:flex; align-items:center; justify-content:center; padding:16px; z-index:60}
+.modal .card{margin:0; width:100%; max-width:440px; text-align:center}
+.modal h2{margin:6px 0 10px; font-size:28px}
+.stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; text-align:left}
+.stats div{border:1px solid var(--line); border-radius:4px; padding:8px 10px; background:#fff}
+.stats small{display:block; color:var(--soft)}
+.stats b{font-size:22px; font-variant-numeric:tabular-nums}
+.modal .home-btns{flex-wrap:wrap}
+.modal .home-btns .btn{flex:1}
+
+@media (min-width:880px){
+  .stage{grid-template-columns:minmax(0,700px) 380px; justify-content:center; align-items:start}
+  .tray, .chips{max-height:calc(100vh - 260px)}
+  .panel{position:sticky; top:12px}
+}
+@media (max-width:879px){
+  .tray, .chips{flex-wrap:nowrap; overflow-x:auto; max-height:none; padding-bottom:6px}
+  .chip{flex:none}
+  .panel{position:sticky; bottom:0; background:var(--paper); padding:8px 0 4px; border-top:1.5px solid var(--ink); z-index:5}
+  .piece{flex:none; width:70px; height:70px}
+}
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation:none !important; transition:none !important} }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="home" class="screen active">
+    <div class="card">
+      <div class="label-top"><span>SPECIMEN · 骨骼標本</span><span>DORSAL VIEW 背面觀</span></div>
+      <h1 class="serif">蛙骨拼圖</h1>
+      <p class="latin">Frog skeleton puzzle · <i>Rana</i> sp.</p>
+      <div class="hero" id="hero"></div>
+      <div class="levels" id="levels"></div>
+      <ol class="how">
+        <li>把右邊（手機在下方）的骨頭拖到正確位置；也可以先點骨頭，再點骨架上的位置。</li>
+        <li>左右成對的骨頭可以放在任一邊；第 2～8 節軀幹椎也可以互換。</li>
+        <li>拼完後進入第二階段：把名稱標籤放到對應的骨頭上。</li>
+      </ol>
+      <div class="home-btns">
+        <button class="btn primary" id="startBtn">開始拼</button>
+        <button class="btn" id="soundBtn"></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="game" class="screen">
+    <div class="top">
+      <button class="btn small" id="backBtn">回首頁</button>
+      <strong class="serif" id="phaseTitle"></strong>
+      <div class="info"><span id="tTime">00:00</span><span id="tProg"></span><span id="tErr"></span></div>
+    </div>
+    <div class="stage">
+      <div class="boardwrap">
+        <span class="tag">DORSAL VIEW · 背面觀</span>
+        <svg id="board" viewBox="0 0 600 1100" aria-label="青蛙骨架">
+          <g id="silh"></g>
+          <g id="ghosts"></g>
+          <g id="placed"></g>
+          <g id="flash"></g>
+        </svg>
+      </div>
+      <div class="panel">
+        <div class="msg" id="msg"></div>
+        <div id="p1">
+          <h3 id="trayTitle"></h3>
+          <div class="tray" id="tray"></div>
+          <div class="tools" style="margin-top:8px">
+            <button class="btn small" id="ghostBtn">顯示輪廓</button>
+            <button class="btn small" id="hintBtn">提示位置</button>
+          </div>
+        </div>
+        <div id="p2" hidden>
+          <h3>點一個名稱，再點骨架上對應的骨頭（也可以直接拖過去）</h3>
+          <div class="chips" id="chips"></div>
+          <div class="done-list" id="doneList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="modal" hidden><div class="card" id="modalBox"></div></div>
+<svg id="measure" viewBox="0 0 600 1100" style="position:absolute; left:-9999px; top:0; width:600px; height:1100px; visibility:hidden" aria-hidden="true"></svg>
+
+<script>
+/* =====================================================================
+   骨頭名稱：中文、英文、小知識
+   ===================================================================== */
+const NAMES = {
+  skull:['頭骨','Skull','頭骨扁平，眼窩很大；大部分骨頭左右成對。'],
+  pmx:['前頜骨','Premaxilla','位在吻端最前方，上面長著細小的牙齒。'],
+  max:['上頜骨','Maxilla','構成上顎外緣，青蛙的牙齒主要長在這裡。'],
+  qj:['方軛骨','Quadratojugal','接在上頜骨後方，靠近上下顎的關節。'],
+  nas:['鼻骨','Nasal','位在鼻孔後方的一對三角形骨頭。'],
+  sph:['蝶篩骨','Sphenethmoid','單一的骨頭，像環一樣包住腦的前端。'],
+  fp:['額頂骨','Frontoparietal','由額骨和頂骨癒合而成，左右一對，蓋住腦的上方。'],
+  pro:['前耳骨','Prootic','包住內耳的骨頭，位在頭骨後側。'],
+  exo:['外枕骨','Exoccipital','有兩個枕髁，和第一節脊椎（寰椎）相接。'],
+  sq:['鱗骨','Squamosal','T 字形，把前耳骨和上下顎關節連起來。'],
+  column:['脊柱','Vertebral column','青蛙只有 9 節脊椎：8 節軀幹椎和 1 節薦椎，而且沒有肋骨。'],
+  atlas:['寰椎','Atlas','第一節脊椎，沒有橫突，和頭骨的兩個枕髁相接。'],
+  pre:['軀幹椎','Presacral vertebra','第 2～8 節脊椎，兩側有橫突；第 3、4 節的橫突最長。'],
+  sac:['薦椎','Sacral vertebra','第 9 節脊椎，橫突又寬又大，和腸骨相連。'],
+  uro:['尾桿骨','Urostyle','由好幾節尾椎癒合成的一根長骨，是無尾目特有的構造。'],
+  girdle:['肩帶（背面）','Pectoral girdle','背面看得到上肩胛骨和肩胛骨；鎖骨、烏喙骨、胸骨在腹面。'],
+  ssc:['上肩胛骨','Suprascapula','又寬又薄，大部分是鈣化的軟骨，貼在背部兩側。'],
+  sca:['肩胛骨','Scapula','連接上肩胛骨和肱骨，形成肩關節的一部分。'],
+  hum:['肱骨','Humerus','前肢的上臂骨，有明顯的三角肌嵴。'],
+  ru:['橈尺骨','Radio-ulna','橈骨和尺骨癒合成一根，表面還看得到一條溝。'],
+  hand:['手部骨骼','Manus','包含腕骨、掌骨和指骨；青蛙前肢有 4 根指頭。'],
+  car:['腕骨','Carpals','一群小骨頭，構成手腕。'],
+  mcph:['掌骨與指骨','Metacarpals & phalanges','前肢 4 根指頭，指骨數通常是 2、2、3、3。'],
+  mc:['掌骨','Metacarpals','手掌的骨頭，每根指頭一根。'],
+  ph:['指骨','Phalanges (manus)','前肢的指骨，通常是 2、2、3、3 節。'],
+  pelvis:['腰帶','Pelvic girdle','左右腸骨往後會合在髖臼，形成 V 字形，幫助跳躍時傳力。'],
+  il:['腸骨','Ilium','很長的一對骨頭，往前接薦椎，往後到髖臼。'],
+  isc:['坐骨','Ischium','位在腰帶的最後方，左右癒合；恥骨在腹面。'],
+  fem:['股骨','Femur','後肢的大腿骨，細長而有力。'],
+  tf:['脛腓骨','Tibiofibula','脛骨和腓骨癒合成一根，是後肢最長的骨頭之一。'],
+  foot:['足部骨骼','Pes','包含很長的距骨和跟骨，以及蹠骨、趾骨；後腳有 5 根趾頭。'],
+  ast:['距骨','Astragalus (tibiale)','近端的跗骨變得很長，就像多了一節腿，幫助跳得更遠。'],
+  cal:['跟骨','Calcaneum (fibulare)','和距骨並排、一樣很長，兩端互相癒合。'],
+  mttoe:['蹠骨與趾骨','Metatarsals & phalanges','後肢 5 根趾頭，趾骨數通常是 2、2、3、4、3，第 4 趾最長。'],
+  mt:['蹠骨','Metatarsals','腳掌的骨頭，每根趾頭一根。'],
+  toe:['趾骨','Phalanges (pes)','後肢的趾骨，通常是 2、2、3、4、3 節，第 4 趾最長。']
+};
+/* 骨頭所在區域，第二階段標對後的顏色 */
+const REGION = {
+  skull:'#f2d49b', pmx:'#f2d49b', max:'#f2d49b', qj:'#f2d49b', nas:'#f2d49b', sph:'#f2d49b', fp:'#f2d49b', pro:'#f2d49b', exo:'#f2d49b', sq:'#f2d49b',
+  column:'#c9def0', atlas:'#c9def0', pre:'#c9def0', sac:'#c9def0', uro:'#c9def0',
+  girdle:'#e0d3ef', ssc:'#e0d3ef', sca:'#e0d3ef', pelvis:'#e0d3ef', il:'#e0d3ef', isc:'#e0d3ef',
+  hum:'#cfe8c8', ru:'#cfe8c8', hand:'#cfe8c8', car:'#cfe8c8', mcph:'#cfe8c8', mc:'#cfe8c8', ph:'#cfe8c8',
+  fem:'#f3cdc4', tf:'#f3cdc4', foot:'#f3cdc4', ast:'#f3cdc4', cal:'#f3cdc4', mttoe:'#f3cdc4', mt:'#f3cdc4', toe:'#f3cdc4'
+};
+
+/* =====================================================================
+   原創示意圖：以左半邊（畫面左側）定義，右邊用鏡像
+   ===================================================================== */
+const MID = 300;
+function f(n){ return Math.round(n*10)/10; }
+/* 長骨：骨幹＋兩端關節頭 */
+function seg(x1,y1,x2,y2,w,r1,r2){
+  const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy), nx=-dy/L*w/2, ny=dx/L*w/2;
+  return '<path d="M'+f(x1+nx)+' '+f(y1+ny)+' L'+f(x2+nx)+' '+f(y2+ny)+' L'+f(x2-nx)+' '+f(y2-ny)+' L'+f(x1-nx)+' '+f(y1-ny)+'Z"/>'
+    + (r1 ? '<circle cx="'+x1+'" cy="'+y1+'" r="'+r1+'"/>' : '') + (r2 ? '<circle cx="'+x2+'" cy="'+y2+'" r="'+r2+'"/>' : '');
+}
+function P(d){ return '<path d="'+d+'"/>'; }
+/* 指（趾）：掌骨＋指骨 */
+function digit(bx,by,tx,ty,n,len,w){
+  const L=Math.hypot(tx-bx,ty-by), ux=(tx-bx)/L, uy=(ty-by)/L;
+  const meta = seg(bx,by,tx,ty,w,w*0.75,w*0.8);
+  let ph = '', x=tx+ux*2.5, y=ty+uy*2.5;
+  for(let i=0;i<n;i++){
+    const l = i===n-1 ? len*0.8 : len, x2=x+ux*l, y2=y+uy*l;
+    ph += seg(x,y,x2,y2,w*0.8,w*0.62,i===n-1?w*0.45:w*0.62);
+    x = x2+ux*2.5; y = y2+uy*2.5;
+  }
+  return [meta, ph];
+}
+function vert(y, len, tilt){
+  const t = tilt||0;
+  return P('M291 '+y+' H309 Q312 '+y+' 312 '+(y+4)+' V'+(y+20)+' Q312 '+(y+24)+' 308 '+(y+24)+' H292 Q288 '+(y+24)+' 288 '+(y+20)+' V'+(y+4)+' Q288 '+y+' 291 '+y+'Z')
+    + (len ? seg(MID-10-len, y+11+t, MID, y+11, 7, 3.5, 0) + seg(MID, y+11, MID+10+len, y+11+t, 7, 0, 3.5) : '');
+}
+const FH = [[109,238,120,206],[104,237,108,200],[99,237,94,200],[94,238,80,207]], FN = [2,2,3,3];
+const TF = [[116,952,134,992],[111,954,122,1002],[106,955,106,1008],[101,954,88,1008],[96,952,70,998]], TN = [2,2,3,4,3];
+const hand = FH.map(function(d,i){ return digit(d[0],d[1],d[2],d[3],FN[i],11,4.2); });
+const foot = TF.map(function(d,i){ return digit(d[0],d[1],d[2],d[3],TN[i],14,4.6); });
+
+/* 每塊細部骨頭：s=形狀，d=細節線，side：L 成對、C 中間 */
+const FINE = {
+  pmx:{ s:P('M300 36 Q282 36 270 46 L276 61 Q290 55 300 56Z'), side:'L' },
+  max:{ s:P('M270 46 Q226 72 213 132 Q207 166 209 192 L219 192 Q218 162 225 132 Q238 82 278 60Z'), side:'L' },
+  qj: { s:P('M209 194 L205 214 L216 216 L220 194Z'), side:'L' },
+  nas:{ s:P('M298 62 L260 80 Q261 100 276 108 L298 103Z'), side:'L' },
+  sph:{ s:P('M281 106 L300 100 L319 106 L322 128 L300 134 L278 128Z'), d:'<path d="M300 104 V130"/>', side:'C' },
+  fp: { s:P('M279 130 L299 136 L299 186 L283 186 Q276 158 279 130Z'), side:'L' },
+  pro:{ s:P('M281 186 L262 182 L254 194 L262 208 L281 206Z'), side:'L' },
+  exo:{ s:P('M299 188 L285 188 L283 208 L291 218 L299 216Z'), d:'<circle cx="294" cy="214" r="3"/>', side:'L' },
+  sq: { s:P('M258 189 L246 189 L236 193 L232 176 L225 178 L228 197 L213 207 L219 214 L240 203 L258 200Z'), side:'L' },
+  atlas:{ s:vert(220, 0), side:'C' },
+  v2:{ s:vert(247, 32, -6), side:'C' }, v3:{ s:vert(274, 46, -2), side:'C' }, v4:{ s:vert(301, 42, 6), side:'C' },
+  v5:{ s:vert(328, 28, 2), side:'C' }, v6:{ s:vert(355, 26, 2), side:'C' }, v7:{ s:vert(382, 26, 2), side:'C' }, v8:{ s:vert(409, 24, 0), side:'C' },
+  sac:{ s:P('M291 436 H309 Q312 436 312 440 L346 456 Q352 464 346 470 L334 470 L310 462 H290 L266 470 L254 470 Q248 464 254 456 L288 440 Q288 436 291 436Z'), side:'C' },
+  uro:{ s:P('M293 466 Q300 462 307 466 L307 480 L304 636 Q300 648 296 636 L293 480Z'), d:'<path d="M300 480 V630"/>', side:'C' },
+  ssc:{ s:P('M262 246 L232 238 L204 262 L213 292 L246 284 L262 268Z'), d:'<path d="M226 254 L236 280 M244 248 L252 272"/>', side:'L' },
+  sca:{ s:P('M216 268 L213 291 L192 298 L184 286 L196 277Z'), side:'L' },
+  hum:{ s:seg(186,292,132,340,9,8,9)+P('M172 298 Q160 314 150 318 L156 308Z'), side:'L' },
+  ru: { s:seg(132,342,104,262,10,9,8), d:'<path d="M126 326 L110 278"/>', side:'L' },
+  car:{ s:'<circle cx="96" cy="251" r="6"/><circle cx="107" cy="249" r="6"/><circle cx="101" cy="242" r="5.5"/><circle cx="91" cy="243" r="5"/>', side:'L' },
+  mc: { s:hand.map(function(h){ return h[0]; }).join(''), side:'L' },
+  ph: { s:hand.map(function(h){ return h[1]; }).join(''), side:'L' },
+  il: { s:seg(256,468,290,640,10,7,9)+P('M260 480 Q272 540 286 600 L282 602 Q266 540 255 482Z'), side:'L' },
+  isc:{ s:P('M283 640 Q300 630 317 640 L320 660 Q300 678 280 660Z'), d:'<circle cx="300" cy="652" r="6"/>', side:'C' },
+  fem:{ s:seg(286,656,178,724,10,9,10), side:'L' },
+  tf: { s:seg(176,726,124,860,12,10,9), d:'<path d="M168 748 L132 840"/>', side:'L' },
+  ast:{ s:seg(129,862,113,948,6.5,6,5.5), side:'L' },
+  cal:{ s:seg(118,860,98,944,6.5,6,5.5), side:'L' },
+  mt: { s:foot.map(function(h){ return h[0]; }).join(''), side:'L' },
+  toe:{ s:foot.map(function(h){ return h[1]; }).join(''), side:'L' }
+};
+const SKULL_FINE = ['pmx*','max*','qj*','nas*','sph','fp*','pro*','exo*','sq*'];
+const PRE = ['v2','v3','v4','v5','v6','v7','v8'];
+
+/* 細部骨頭 id → SVG（L/R 已套鏡像） */
+function fineSVG(id){
+  const side = id.slice(-1), base = (side==='L'||side==='R') && FINE[id.slice(0,-1)] ? id.slice(0,-1) : id, F = FINE[base];
+  const body = '<g class="o">'+F.s+'</g><g class="f">'+F.s+'</g>'+(F.d ? '<g class="d">'+F.d+'</g>' : '');
+  return side==='R' && F.side==='L' ? '<g transform="matrix(-1 0 0 1 600 0)">'+body+'</g>' : body;
+}
+function expand(list){
+  const out = [];
+  list.forEach(function(x){ if(x.slice(-1)==='*'){ out.push(x.slice(0,-1)+'L', x.slice(0,-1)+'R'); } else out.push(x); });
+  return out;
+}
+
+/* =====================================================================
+   三個難度：每一塊拼圖由哪些細部骨頭組成
+   pair:true 表示左右各一塊
+   ===================================================================== */
+const LEVELS = {
+  easy:{ name:'簡單', desc:'大塊的骨頭：頭骨、脊柱、四肢、腰帶', ghost:true, pieces:[
+    { n:'skull', f:SKULL_FINE }, { n:'column', f:['atlas'].concat(PRE, ['sac']) }, { n:'uro', f:['uro'] },
+    { n:'girdle', f:['ssc','sca'], pair:true }, { n:'hum', f:['hum'], pair:true }, { n:'ru', f:['ru'], pair:true }, { n:'hand', f:['car','mc','ph'], pair:true },
+    { n:'pelvis', f:['il*','isc'] }, { n:'fem', f:['fem'], pair:true }, { n:'tf', f:['tf'], pair:true }, { n:'foot', f:['ast','cal','mt','toe'], pair:true }
+  ]},
+  mid:{ name:'進階', desc:'每節脊椎分開，手腳拆成腕骨、距骨、跟骨', ghost:true, pieces:[
+    { n:'skull', f:SKULL_FINE }, { n:'atlas', f:['atlas'] } ].concat(PRE.map(function(v){ return { n:'pre', f:[v] }; }), [
+    { n:'sac', f:['sac'] }, { n:'uro', f:['uro'] }, { n:'ssc', f:['ssc'], pair:true }, { n:'sca', f:['sca'], pair:true },
+    { n:'hum', f:['hum'], pair:true }, { n:'ru', f:['ru'], pair:true }, { n:'car', f:['car'], pair:true }, { n:'mcph', f:['mc','ph'], pair:true },
+    { n:'il', f:['il'], pair:true }, { n:'isc', f:['isc'] }, { n:'fem', f:['fem'], pair:true }, { n:'tf', f:['tf'], pair:true },
+    { n:'ast', f:['ast'], pair:true }, { n:'cal', f:['cal'], pair:true }, { n:'mttoe', f:['mt','toe'], pair:true }
+  ])},
+  hard:{ name:'困難', desc:'頭骨也拆開，掌骨、指骨、蹠骨、趾骨分開', ghost:false, pieces:[
+    { n:'pmx', f:['pmx'], pair:true }, { n:'max', f:['max'], pair:true }, { n:'qj', f:['qj'], pair:true }, { n:'nas', f:['nas'], pair:true },
+    { n:'sph', f:['sph'] }, { n:'fp', f:['fp'], pair:true }, { n:'pro', f:['pro'], pair:true }, { n:'exo', f:['exo'], pair:true }, { n:'sq', f:['sq'], pair:true },
+    { n:'atlas', f:['atlas'] } ].concat(PRE.map(function(v){ return { n:'pre', f:[v] }; }), [
+    { n:'sac', f:['sac'] }, { n:'uro', f:['uro'] }, { n:'ssc', f:['ssc'], pair:true }, { n:'sca', f:['sca'], pair:true },
+    { n:'hum', f:['hum'], pair:true }, { n:'ru', f:['ru'], pair:true }, { n:'car', f:['car'], pair:true }, { n:'mc', f:['mc'], pair:true }, { n:'ph', f:['ph'], pair:true },
+    { n:'il', f:['il'], pair:true }, { n:'isc', f:['isc'] }, { n:'fem', f:['fem'], pair:true }, { n:'tf', f:['tf'], pair:true },
+    { n:'ast', f:['ast'], pair:true }, { n:'cal', f:['cal'], pair:true }, { n:'mt', f:['mt'], pair:true }, { n:'toe', f:['toe'], pair:true }
+  ])}
+};
+/* 展開成實際的拼圖塊 */
+function buildPieces(lv){
+  const out = [];
+  LEVELS[lv].pieces.forEach(function(p, i){
+    if(p.pair){
+      ['L','R'].forEach(function(s){ out.push({ id:p.n+i+s, n:p.n, twin:p.n+i+(s==='L'?'R':'L'), fine:p.f.map(function(x){ return x+s; }) }); });
+    }else out.push({ id:p.n+i, n:p.n, twin:null, fine:expand(p.f) });
+  });
+  return out;
+}
+function pieceSVG(p){ return p.fine.map(fineSVG).join(''); }
+
+/* ===== 小工具 ===== */
+const $ = function(id){ return document.getElementById(id); };
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function show(id){ document.querySelectorAll('.screen').forEach(function(s){ s.classList.toggle('active', s.id===id); }); window.scrollTo(0,0); }
+function mmss(ms){ const s=Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+const store = (function(){
+  try{ const s = JSON.parse(localStorage.getItem('frog-bones')); if(s) return s; }catch(e){}
+  return { level:'easy', best:{} };
+})();
+function save(){ try{ localStorage.setItem('frog-bones', JSON.stringify(store)); }catch(e){} }
+
+/* ===== 音效 ===== */
+let ac = null, soundOn = true;
+function tone(freqs, dur, type, gap){
+  if(!soundOn) return;
+  try{
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    freqs.forEach(function(fq,i){
+      const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i*(gap||dur);
+      o.type = type||'sine'; o.frequency.value = fq;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+    });
+  }catch(e){}
+}
+function sSnap(){ tone([880,1320], 0.05, 'square', 0.04); }
+function sNo(){ tone([260,220], 0.1, 'triangle'); }
+function sDone(){ tone([523,659,784,1047], 0.12, 'triangle'); }
+
+/* ===== 首頁 ===== */
+function skeletonSVG(extraClass){
+  return '<svg viewBox="0 0 600 1100" aria-hidden="true">'+Object.keys(FINE).map(function(k){
+    return FINE[k].side==='L' ? fineSVG(k+'L')+fineSVG(k+'R') : fineSVG(k);
+  }).join('')+'</svg>';
+}
+$('hero').innerHTML = skeletonSVG();
+function renderHome(){
+  $('levels').innerHTML = Object.keys(LEVELS).map(function(k){
+    const L = LEVELS[k], n = buildPieces(k).length, b = store.best[k];
+    return '<button class="lv" data-level="'+k+'" aria-pressed="'+(store.level===k)+'"><span><span class="t serif">'+L.name+'</span><span class="d">'+L.desc+'</span></span>'
+      + '<span class="n">'+n+' 塊<small>'+(b ? '最佳 '+mmss(b) : '　')+'</small></span></button>';
+  }).join('');
+  document.querySelectorAll('[data-level]').forEach(function(b){ b.onclick = function(){ store.level = b.dataset.level; save(); renderHome(); }; });
+  $('soundBtn').textContent = '音效：' + (soundOn ? '開' : '關');
+}
+$('soundBtn').onclick = function(){ soundOn = !soundOn; renderHome(); };
+
+/* =====================================================================
+   拼圖
+   ===================================================================== */
+let level, pieces, byId, filled, phase, errors, labelErrors, hints, t0, timer, selected, attempts, labelsLeft, selChip;
+const SILH = (function(){
+  const st = function(a){ return '<path d="M'+a.join(' L')+'" stroke-width="40"/>'; };
+  const body = '<path d="M300 24 C222 24 184 118 190 206 C160 262 176 520 232 622 C262 676 338 676 368 622 C424 520 440 262 410 206 C416 118 378 24 300 24Z" fill="#8fb59a" stroke="none"/>';
+  const L = st(['186 292','132 340','104 262','98 205']) + st(['286 656','178 724','124 860','106 950','100 1000']);
+  return body + L + '<g transform="matrix(-1 0 0 1 600 0)">'+L+'</g>';
+})();
+function startGame(){
+  level = store.level; pieces = buildPieces(level); byId = {}; pieces.forEach(function(p){ byId[p.id] = p; });
+  filled = {}; errors = 0; labelErrors = 0; hints = 0; t0 = 0; selected = null; attempts = {}; selChip = null; phase = 1;
+  clearInterval(timer); $('tTime').textContent = '00:00';
+  $('silh').innerHTML = '<g class="silh">'+SILH+'</g>';
+  /* 量出每塊在骨架上的範圍 */
+  $('measure').innerHTML = pieces.map(function(p){ return '<g data-id="'+p.id+'">'+pieceSVG(p)+'</g>'; }).join('');
+  document.querySelectorAll('#measure > g').forEach(function(g){ const b = g.getBBox(); const p = byId[g.dataset.id]; p.box = { x:b.x, y:b.y, w:b.width, h:b.height, cx:b.x+b.width/2, cy:b.y+b.height/2 }; });
+  $('measure').innerHTML = '';
+  $('ghosts').innerHTML = pieces.map(function(p){ return '<g class="ghost" data-id="'+p.id+'">'+pieceSVG(p)+'</g>'; }).join('');
+  $('ghosts').classList.toggle('off', !LEVELS[level].ghost);
+  $('placed').innerHTML = ''; $('flash').innerHTML = '';
+  $('tray').innerHTML = shuffle(pieces.slice()).map(function(p){
+    const b = p.box, pad = 6;
+    return '<button class="piece" data-id="'+p.id+'" aria-label="骨頭"><svg viewBox="'+f(b.x-pad)+' '+f(b.y-pad)+' '+f(b.w+pad*2)+' '+f(b.h+pad*2)+'">'+pieceSVG(p)+'</svg></button>';
+  }).join('');
+  document.querySelectorAll('.piece').forEach(function(el){ el.addEventListener('pointerdown', function(e){ startDrag(e, el, 'piece'); }); });
+  $('p1').hidden = false; $('p2').hidden = true; $('modal').hidden = true;
+  $('phaseTitle').textContent = '第一階段：拼骨架（'+LEVELS[level].name+'）';
+  $('trayTitle').textContent = '骨頭零件';
+  setMsg('', '把骨頭拖到骨架上正確的位置。左右成對的骨頭放哪一邊都可以。');
+  updateGhostBtn(); updateInfo();
+  show('game');
+}
+function startClock(){ if(!t0){ t0 = Date.now(); timer = setInterval(function(){ $('tTime').textContent = mmss(Date.now()-t0); }, 500); } }
+function updateInfo(){
+  if(phase===1){ $('tProg').textContent = '已放 '+Object.keys(filled).length+' / '+pieces.length; $('tErr').textContent = '放錯 '+errors; }
+  else { const total = uniqueNames().length; $('tProg').textContent = '已標 '+(total-labelsLeft.length)+' / '+total; $('tErr').textContent = '標錯 '+labelErrors; }
+}
+function setMsg(cls, html){ $('msg').className = 'msg '+cls; $('msg').innerHTML = html; }
+function nameHTML(n, withFact){ const N = NAMES[n]; return '<b>'+N[0]+'</b> <i>'+N[1]+'</i>'+(withFact ? '<br>'+N[2] : ''); }
+function updateGhostBtn(){ const on = !$('ghosts').classList.contains('off'); $('ghostBtn').classList.toggle('on', on); $('ghostBtn').textContent = on ? '隱藏輪廓' : '顯示輪廓'; }
+$('ghostBtn').onclick = function(){ $('ghosts').classList.toggle('off'); updateGhostBtn(); };
+$('hintBtn').onclick = function(){
+  if(!selected){ setMsg('', '先點一塊骨頭，再按「提示位置」。'); return; }
+  hints++; flashSlots(selected);
+};
+function flashSlots(id){
+  const p = byId[id], ids = pieces.filter(function(q){ return q.n === p.n && !filled[q.id]; }).map(function(q){ return q.id; });
+  $('flash').innerHTML = ids.map(function(x){ return '<g class="ghost slot-flash">'+pieceSVG(byId[x])+'</g>'; }).join('');
+  setTimeout(function(){ $('flash').innerHTML = ''; }, 2200);
+}
+function selectPiece(id){
+  selected = selected===id ? null : id;
+  document.querySelectorAll('.piece').forEach(function(el){ el.classList.toggle('sel', el.dataset.id===selected); });
+  if(selected) setMsg('', '已選取一塊骨頭，點骨架上的位置把它放上去。');
+}
+
+/* ===== 放骨頭 ===== */
+function svgPoint(cx, cy){
+  const m = $('board').getScreenCTM(); if(!m) return null;
+  const pt = $('board').createSVGPoint(); pt.x = cx; pt.y = cy;
+  return pt.matrixTransform(m.inverse());
+}
+function insideBoard(pt){ return pt && pt.x>=-20 && pt.x<=620 && pt.y>=-20 && pt.y<=1120; }
+function tryPlace(id, pt){
+  startClock();
+  const p = byId[id];
+  /* 同名的骨頭（左右一對、第 2～8 節軀幹椎）放哪一個位置都可以 */
+  const cands = pieces.filter(function(q){ return q.n === p.n && !filled[q.id]; }).map(function(q){ return q.id; });
+  let best = null, bd = 1e9;
+  cands.forEach(function(x){
+    const b = byId[x].box, d = Math.hypot(pt.x-b.cx, pt.y-b.cy), tol = Math.max(24, 0.42*Math.max(b.w, b.h));
+    if(d < tol && d < bd){ best = x; bd = d; }
+  });
+  const el = document.querySelector('.piece[data-id="'+id+'"]');
+  if(best){
+    filled[best] = true; sSnap();
+    const s = byId[best];
+    $('placed').insertAdjacentHTML('beforeend', '<g class="bone placed" data-id="'+best+'" data-n="'+s.n+'" style="--rc:'+REGION[s.n]+'">'+pieceSVG(s)+'</g>');
+    const gh = document.querySelector('#ghosts [data-id="'+best+'"]'); if(gh) gh.remove();
+    if(el) el.remove();
+    if(selected===id) selected = null;
+    setMsg('good', '✓ '+nameHTML(s.n, true));
+    updateInfo();
+    if(Object.keys(filled).length === pieces.length) setTimeout(startPhase2, 700);
+    return true;
+  }
+  errors++; sNo(); attempts[id] = (attempts[id]||0) + 1;
+  if(el){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+  if(attempts[id] >= 3){ flashSlots(id); setMsg('warm', '位置不太對，紅色虛線是這塊骨頭的位置。'); }
+  else setMsg('warm', '位置不太對，再看看骨頭的形狀和方向。'+(attempts[id]===2 ? '再放錯一次會顯示位置。' : ''));
+  updateInfo();
+  return false;
+}
+
+/* ===== 拖曳（骨頭和名稱標籤共用） ===== */
+let drag = null;
+function startDrag(e, el, kind){
+  if(e.button && e.button !== 0) return;
+  e.preventDefault();
+  drag = { el:el, kind:kind, x0:e.clientX, y0:e.clientY, moved:false, fl:null };
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onCancel);
+}
+function onMove(e){
+  if(!drag) return;
+  if(!drag.moved && Math.hypot(e.clientX-drag.x0, e.clientY-drag.y0) > 6){
+    drag.moved = true;
+    const fl = document.createElement('div'); fl.className = 'float';
+    if(drag.kind==='piece'){
+      const p = byId[drag.el.dataset.id], b = p.box, sc = $('board').getScreenCTM().a;
+      fl.innerHTML = '<svg viewBox="'+f(b.x)+' '+f(b.y)+' '+f(b.w)+' '+f(b.h)+'" width="'+f(b.w*sc)+'" height="'+f(b.h*sc)+'">'+pieceSVG(p)+'</svg>';
+      drag.ox = b.w*sc/2; drag.oy = b.h*sc/2;
+      drag.el.style.opacity = '.35';
+    }else{
+      fl.className = 'float chipf'; fl.textContent = NAMES[drag.el.dataset.n][0];
+      drag.ox = 20; drag.oy = 16;
+    }
+    document.body.appendChild(fl); drag.fl = fl;
+  }
+  if(drag.moved){
+    drag.fl.style.left = (e.clientX - drag.ox)+'px'; drag.fl.style.top = (e.clientY - drag.oy)+'px';
+    if(drag.kind==='chip') hoverBone(e.clientX, e.clientY);
+  }
+}
+function endDrag(){
+  window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onCancel);
+  if(drag && drag.fl) drag.fl.remove();
+  if(drag && drag.el) drag.el.style.opacity = '';
+  hoverBone(-1,-1);
+}
+function onCancel(){ endDrag(); drag = null; }
+function onUp(e){
+  const d = drag; endDrag(); drag = null;
+  if(!d) return;
+  if(d.kind==='piece'){
+    const id = d.el.dataset.id;
+    if(!d.moved){ selectPiece(id); return; }
+    const pt = svgPoint(e.clientX, e.clientY);
+    if(insideBoard(pt)) tryPlace(id, pt);
+  }else{
+    if(!d.moved){ selectChip(d.el.dataset.n); return; }
+    const b = boneAt(e.clientX, e.clientY);
+    if(b) tryLabel(d.el.dataset.n, b);
+  }
+}
+/* 點骨架：第一階段放選取的骨頭；第二階段標選取的名稱；完成後查看名稱 */
+$('board').addEventListener('click', function(e){
+  if(phase===1){
+    if(!selected) return;
+    const pt = svgPoint(e.clientX, e.clientY); if(pt) tryPlace(selected, pt);
+  }else{
+    const b = e.target.closest ? e.target.closest('#placed .bone') : null;
+    if(!b) return;
+    if(phase===2 && selChip) tryLabel(selChip, b);
+    else if(phase===3 || b.classList.contains('named')) setMsg('', nameHTML(b.dataset.n, true));
+  }
+});
+
+/* =====================================================================
+   第二階段：標名稱
+   ===================================================================== */
+function uniqueNames(){ const s = []; pieces.forEach(function(p){ if(s.indexOf(p.n) < 0) s.push(p.n); }); return s; }
+function startPhase2(){
+  phase = 2; labelsLeft = shuffle(uniqueNames());
+  $('ghosts').innerHTML = '';
+  $('p1').hidden = true; $('p2').hidden = false;
+  $('phaseTitle').textContent = '第二階段：標名稱（'+LEVELS[level].name+'）';
+  setMsg('good', '骨架拼好了！接著把每個名稱放到對應的骨頭上。成對的骨頭標一邊就好。');
+  renderChips(); updateInfo();
+}
+function renderChips(){
+  $('chips').innerHTML = labelsLeft.map(function(n){ return '<button class="chip'+(selChip===n?' sel':'')+'" data-n="'+n+'">'+NAMES[n][0]+'<small>'+NAMES[n][1]+'</small></button>'; }).join('');
+  document.querySelectorAll('.chip').forEach(function(el){ el.addEventListener('pointerdown', function(e){ startDrag(e, el, 'chip'); }); });
+  const done = uniqueNames().filter(function(n){ return labelsLeft.indexOf(n) < 0; });
+  $('doneList').innerHTML = done.length ? '已完成：'+done.map(function(n){ return NAMES[n][0]; }).join('、') : '';
+}
+function selectChip(n){ selChip = selChip===n ? null : n; renderChips(); if(selChip) setMsg('', '已選「'+NAMES[n][0]+'」，點骨架上對應的骨頭。'); }
+function boneAt(x, y){ const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('#placed .bone') : null; }
+function hoverBone(x, y){
+  document.querySelectorAll('#placed .bone.hover').forEach(function(b){ b.classList.remove('hover'); });
+  if(x < 0) return;
+  const b = boneAt(x, y); if(b) b.classList.add('hover');
+}
+function tryLabel(n, boneEl){
+  startClock();
+  if(boneEl.classList.contains('named')){ setMsg('', '這塊已經標好了：'+nameHTML(boneEl.dataset.n)); return; }
+  if(boneEl.dataset.n === n){
+    sSnap();
+    document.querySelectorAll('#placed .bone[data-n="'+n+'"]').forEach(function(b){ b.classList.add('named'); });
+    labelsLeft = labelsLeft.filter(function(x){ return x !== n; }); selChip = null;
+    setMsg('good', '✓ '+nameHTML(n, true));
+    renderChips(); updateInfo();
+    if(!labelsLeft.length) setTimeout(finish, 600);
+    return;
+  }
+  labelErrors++; sNo();
+  boneEl.classList.add('wrongpick'); setTimeout(function(){ boneEl.classList.remove('wrongpick'); }, 600);
+  const chip = document.querySelector('.chip[data-n="'+n+'"]'); if(chip){ chip.classList.remove('shake'); void chip.offsetWidth; chip.classList.add('shake'); }
+  setMsg('warm', '這塊不是「'+NAMES[n][0]+'」，再找找看。');
+  updateInfo();
+}
+
+/* ===== 完成 ===== */
+function finish(){
+  phase = 3; clearInterval(timer); sDone();
+  const ms = Date.now() - t0, isBest = !store.best[level] || ms < store.best[level];
+  if(isBest){ store.best[level] = ms; save(); }
+  $('phaseTitle').textContent = '完成！點任何一塊骨頭可以查看名稱';
+  $('modalBox').innerHTML = '<div class="label-top"><span>SPECIMEN COMPLETE</span><span>'+LEVELS[level].name+'</span></div>'
+    + '<h2 class="serif">骨架完成！</h2>'
+    + '<div class="stats"><div><small>用時</small><b>'+mmss(ms)+'</b>'+(isBest?' <small>新紀錄！</small>':'')+'</div><div><small>骨頭塊數</small><b>'+pieces.length+'</b></div>'
+    + '<div><small>放錯位置</small><b>'+errors+'</b></div><div><small>標錯名稱</small><b>'+labelErrors+'</b></div></div>'
+    + (hints ? '<p style="margin:0; color:var(--soft)">用了 '+hints+' 次提示</p>' : '')
+    + '<div class="home-btns"><button class="btn" id="viewBtn">查看骨架</button><button class="btn primary" id="againBtn">再拼一次</button><button class="btn" id="homeBtn">回首頁</button></div>';
+  $('modal').hidden = false;
+  $('viewBtn').onclick = function(){ $('modal').hidden = true; setMsg('', '點任何一塊骨頭可以查看名稱和說明。'); };
+  $('againBtn').onclick = startGame;
+  $('homeBtn').onclick = function(){ $('modal').hidden = true; renderHome(); show('home'); };
+}
+$('backBtn').onclick = function(){ clearInterval(timer); renderHome(); show('home'); };
+$('startBtn').onclick = startGame;
+renderHome();
+</script>
+</body>
+</html>
